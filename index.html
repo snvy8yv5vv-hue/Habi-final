@@ -1,0 +1,694 @@
+\
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#03130c" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <title>Calculator</title>
+
+  <style>
+    :root{
+      --bg0:#030806;
+      --bg1:#03130c;
+      --glass:rgba(9,22,15,.62);
+      --glass2:rgba(8,28,18,.58);
+      --line:rgba(140,255,190,.12);
+      --text:#e9fff2;
+      --muted:rgba(233,255,242,.70);
+      --key:#0b1a12;
+      --key2:#103225;
+      --accent:#7dffb3;
+      --shadow: 0 18px 70px rgba(0,0,0,.50);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      color:var(--text);
+      overflow:hidden;
+      background:
+        radial-gradient(1200px 900px at 18% -8%, rgba(125,255,179,.16), transparent 60%),
+        radial-gradient(900px 700px at 95% 22%, rgba(80,200,255,.10), transparent 55%),
+        radial-gradient(700px 700px at 20% 95%, rgba(150,255,210,.07), transparent 55%),
+        linear-gradient(180deg,var(--bg1),var(--bg0));
+    }
+
+    /* rainforest mist */
+    .mist{
+      position:fixed; inset:-30%;
+      background:
+        radial-gradient(closest-side, rgba(255,255,255,.06), transparent 70%),
+        radial-gradient(closest-side, rgba(125,255,179,.05), transparent 72%),
+        radial-gradient(closest-side, rgba(80,200,255,.04), transparent 70%);
+      filter: blur(18px);
+      animation: drift 14s linear infinite;
+      opacity:.65;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes drift{
+      0%{transform: translate3d(-6%, -2%, 0) scale(1.05)}
+      50%{transform: translate3d(6%, 2%, 0) scale(1.12)}
+      100%{transform: translate3d(-6%, -2%, 0) scale(1.05)}
+    }
+
+    .wrap{
+      position:relative;
+      z-index:1;
+      max-width: 440px;
+      height:100%;
+      margin:0 auto;
+      padding: 16px 14px 18px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding-top: 10px;
+    }
+    .title{
+      opacity:.88;
+      font-size:16px;
+      letter-spacing:.22px;
+    }
+
+    .display{
+      flex:0 0 28%;
+      display:flex;
+      justify-content:flex-end;
+      align-items:flex-end;
+      padding: 0 8px 8px;
+      font-size:58px;
+      line-height:1;
+      text-align:right;
+      overflow:hidden;
+      word-break:break-all;
+      user-select:none;
+      text-shadow: 0 6px 26px rgba(0,0,0,.35);
+    }
+
+    .keys{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-bottom: 10px;
+    }
+    .row{display:flex;gap:10px}
+
+    .btn{
+      flex:1;
+      height:64px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(11,26,18,.92), rgba(8,16,12,.92));
+      border:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      user-select:none;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      transition: transform .06s ease, filter .2s ease;
+    }
+    .btn:active{transform: translateY(1px); filter: brightness(1.06);}
+    .btn.eq{
+      background: linear-gradient(180deg, rgba(16,50,37,.98), rgba(10,34,24,.98));
+      border-color: rgba(125,255,179,.18);
+    }
+    .btn.zero{flex:2.15}
+
+    /* overlays */
+    .overlay{
+      position:fixed; inset:0;
+      display:none;
+      background: rgba(0,0,0,.62);
+      padding: 18px 14px;
+      align-items:center;
+      justify-content:center;
+      z-index: 50;
+    }
+    .overlay.show{display:flex}
+
+    .card{
+      width:min(480px,100%);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(10,26,18,.88), rgba(6,14,10,.92));
+      border: 1px solid rgba(140,255,190,.12);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      backdrop-filter: blur(14px);
+    }
+    .cardTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom: 10px;
+    }
+    .cardTitle{font-size:18px; letter-spacing:.2px}
+    .link{font-size:14px; opacity:.75; user-select:none}
+    .input{
+      width:100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border:1px solid rgba(140,255,190,.14);
+      background: rgba(8,18,12,.75);
+      color: var(--text);
+      font-size: 18px;
+      outline:none;
+      margin-bottom: 12px;
+    }
+    .btnBig{
+      width:100%;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(125,255,179,.18);
+      background: linear-gradient(180deg, rgba(16,50,37,.98), rgba(10,34,24,.98));
+      text-align:center;
+      user-select:none;
+      box-shadow: 0 10px 34px rgba(0,0,0,.28);
+    }
+    .btnBig.secondary{
+      background: rgba(8,18,12,.70);
+      border-color: rgba(140,255,190,.12);
+    }
+    .muted{opacity:.72}
+    .small{font-size:12px;opacity:.62;margin-top:10px}
+
+    /* hidden dashboard */
+    .panel{
+      border-radius: 18px;
+      border: 1px solid rgba(140,255,190,.12);
+      background: rgba(7,18,12,.55);
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .panel h4{margin:0 0 6px 0; font-size:14px; opacity:.9}
+    .panel p{margin:0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      border:1px solid rgba(140,255,190,.14);
+      background: rgba(8,18,12,.55);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size:12px;
+      opacity:.92;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 18px rgba(125,255,179,.35);
+    }
+
+    /* panic spam */
+    .panicBox{
+      height: 62vh;
+      overflow:auto;
+      border-radius: 16px;
+      border: 1px solid rgba(140,255,190,.12);
+      background: rgba(0,0,0,.24);
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .panicLine{
+      font-size:16px;
+      line-height:1.45;
+      opacity:.92;
+      margin: 0 0 8px 0;
+      white-space: pre-wrap;
+    }
+    .panicStrong{font-weight:800; opacity: 1; color: var(--text);}
+    .shake{
+      animation: shake .12s ease-in-out 0s 2;
+    }
+    @keyframes shake{
+      0%{transform:translateX(0)}
+      25%{transform:translateX(-3px)}
+      50%{transform:translateX(3px)}
+      75%{transform:translateX(-2px)}
+      100%{transform:translateX(0)}
+    }
+  </style>
+</head>
+<body>
+  <div class="mist"></div>
+
+  <div class="wrap">
+    <div class="topbar"><div class="title">Calculator</div></div>
+    <div id="display" class="display">0</div>
+
+    <div class="keys">
+      <div class="row">
+        <div class="btn" data-k="C">C</div>
+        <div class="btn" data-k="÷">÷</div>
+        <div class="btn" data-k="×">×</div>
+        <div class="btn" data-k="-">-</div>
+      </div>
+      <div class="row">
+        <div class="btn" data-k="7">7</div><div class="btn" data-k="8">8</div><div class="btn" data-k="9">9</div><div class="btn" data-k="+">+</div>
+      </div>
+      <div class="row">
+        <div class="btn" data-k="4">4</div><div class="btn" data-k="5">5</div><div class="btn" data-k="6">6</div><div class="btn eq" data-k="=">=</div>
+      </div>
+      <div class="row">
+        <div class="btn" data-k="1">1</div><div class="btn" data-k="2">2</div><div class="btn" data-k="3">3</div><div class="btn" data-k=".">.</div>
+      </div>
+      <div class="row">
+        <div id="zero" class="btn zero" data-k="0">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN overlay -->
+  <div id="pinOverlay" class="overlay">
+    <div class="card">
+      <div class="cardTop">
+        <div id="pinTitle" class="cardTitle">Enter PIN</div>
+        <div id="pinClose" class="link">Close</div>
+      </div>
+      <input id="pinInput" class="input" inputmode="numeric" autocomplete="one-time-code" placeholder="••••" maxlength="8" />
+      <div id="pinOk" class="btnBig">OK</div>
+      <div class="small muted">Tip: long-press <b>0</b>.</div>
+    </div>
+  </div>
+
+  <!-- Hidden overlay -->
+  <div id="hiddenOverlay" class="overlay">
+    <div class="card" style="max-height:92vh; overflow:auto;">
+      <div class="cardTop">
+        <div class="cardTitle">Notes</div>
+        <div id="hideBtn" class="link">Hide</div>
+      </div>
+
+      <div class="panel">
+        <h4>Daily quote</h4>
+        <p id="dailyQuote" style="margin:0;line-height:1.45;opacity:.94;">—</p>
+        <div class="small muted">Updates daily (offline).</div>
+      </div>
+
+      <div class="panel">
+        <h4>Streak</h4>
+        <p id="streakText" style="font-size:26px;margin:0 0 4px 0;">00:00:00</p>
+        <div class="pill"><span class="dot"></span><span>Local only</span></div>
+      </div>
+
+      <div class="grid2">
+        <div id="panicBtn" class="btnBig">Panic</div>
+        <div id="rainBtn" class="btnBig secondary">Rain: Off</div>
+      </div>
+
+      <div class="grid2">
+        <div id="logResetBtn" class="btnBig secondary">Log Reset</div>
+        <div id="logWinBtn" class="btnBig secondary">Log Win</div>
+      </div>
+
+      <div class="panel">
+        <h4>Recent</h4>
+        <div id="logList" class="small muted" style="max-height:160px; overflow:auto; line-height:1.5;">No entries yet.</div>
+      </div>
+
+      <div class="small muted">Quick hide returns to calculator instantly.</div>
+    </div>
+  </div>
+
+  <!-- Panic overlay -->
+  <div id="panicOverlay" class="overlay">
+    <div class="card">
+      <div class="cardTop">
+        <div class="cardTitle">Reset</div>
+        <div id="panicClose" class="link">Close</div>
+      </div>
+
+      <div class="muted">This screen fights for you. Don’t negotiate with the urge.</div>
+      <div id="panicBox" class="panicBox"></div>
+
+      <div id="panicHide" class="btnBig" style="margin-top:10px;">Hide</div>
+      <div class="small muted">If rain won't start on iPhone, tap Rain once inside Notes to allow audio.</div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- utils ----------
+  const $ = (id) => document.getElementById(id);
+  const pad2 = (n) => (n < 10 ? "0"+n : ""+n);
+  const now = () => Date.now();
+  const dateKey = () => { const d = new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); };
+  const hashStr = (s) => { let h=2166136261; for (let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return (h>>>0); };
+  const fmtDur = (ms) => {
+    const t = Math.max(0, Math.floor(ms/1000));
+    const d = Math.floor(t/86400);
+    const h = Math.floor((t%86400)/3600);
+    const m = Math.floor((t%3600)/60);
+    const s = t%60;
+    return d>0 ? `${d}d ${pad2(h)}:${pad2(m)}:${pad2(s)}` : `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  };
+
+  // ---------- Quotes (English; includes Hindu / Gita-style messages) ----------
+  const QUOTES_GENERAL = [
+    "Win the next minute. That’s the whole job.",
+    "Delay is a superpower.",
+    "Urges are waves — let them pass without obeying them.",
+    "Small discipline, big freedom.",
+    "You are not the urge. You’re the one noticing it.",
+    "Not forever. Just today.",
+    "Two minutes of control beats two hours of regret."
+  ];
+  const QUOTES_DHARMA = [
+    "Do your duty with a steady mind; the rest will follow.",
+    "You have the right to effort, not to the outcome.",
+    "Let your actions be pure — free from fear and craving.",
+    "A calm mind is strength; a distracted mind is a battlefield.",
+    "Choose what is right over what is easy — that is dharma.",
+    "Self-control is victory; peace is the reward.",
+    "When the mind wanders, gently bring it back — again and again."
+  ];
+  function dailyQuote(){
+    const dk = dateKey();
+    const idxA = hashStr("A:"+dk) % QUOTES_GENERAL.length;
+    const idxB = hashStr("B:"+dk) % QUOTES_DHARMA.length;
+    // alternate by day hash
+    const pickDharma = (hashStr("C:"+dk) % 2) === 0;
+    return pickDharma ? `“${QUOTES_DHARMA[idxB]}”` : `“${QUOTES_GENERAL[idxA]}”`;
+  }
+
+  // ---------- storage ----------
+  const KEY_PIN = "scw_pin_v2";
+  const KEY_STATE = "scw_state_v2";
+  function loadState(){
+    const raw = localStorage.getItem(KEY_STATE);
+    if (!raw){
+      const init = { startTs: now(), lastResetTs: 0, logs: [] };
+      localStorage.setItem(KEY_STATE, JSON.stringify(init));
+      return init;
+    }
+    try { return JSON.parse(raw); }
+    catch {
+      const init = { startTs: now(), lastResetTs: 0, logs: [] };
+      localStorage.setItem(KEY_STATE, JSON.stringify(init));
+      return init;
+    }
+  }
+  function saveState(st){ localStorage.setItem(KEY_STATE, JSON.stringify(st)); }
+  function addLog(type, note){
+    const st = loadState();
+    st.logs.unshift({ id: now()+"_"+Math.random().toString(16).slice(2), ts: now(), type, note: note || "" });
+    st.logs = (st.logs||[]).slice(0, 60);
+    saveState(st);
+    renderHidden();
+  }
+  function logReset(){
+    const st = loadState();
+    st.lastResetTs = now();
+    st.logs.unshift({ id: now()+"_"+Math.random().toString(16).slice(2), ts: now(), type:"reset", note:"" });
+    st.logs = (st.logs||[]).slice(0,60);
+    saveState(st);
+    renderHidden();
+    alert("Logged (local only).");
+  }
+
+  // ---------- calculator ----------
+  const display = $("display");
+  let memA=null, memOp=null;
+  function setDisp(v){ display.textContent = (""+v).slice(0, 20); }
+  function press(k){
+    let cur = display.textContent;
+    if (k==="C"){ memA=null; memOp=null; setDisp("0"); return; }
+    if (k==="="){
+      if (!memOp || memA===null) return;
+      const a=memA, b=parseFloat(cur);
+      let out=b;
+      if (memOp==="+") out=a+b;
+      if (memOp==="-") out=a-b;
+      if (memOp==="×") out=a*b;
+      if (memOp==="÷") out=(b===0?NaN:a/b);
+      memA=null; memOp=null; setDisp(String(out)); return;
+    }
+    if (["+","-","×","÷"].includes(k)){ memA=parseFloat(cur); memOp=k; setDisp("0"); return; }
+    if (k==="."){ if (cur.includes(".")) return; setDisp(cur+"."); return; }
+    if (cur==="0") setDisp(k); else setDisp(cur+k);
+  }
+  document.querySelectorAll(".btn").forEach(b => b.addEventListener("click", () => press(b.dataset.k)));
+
+  // secret unlock: long-press 0
+  let lpTimer=null;
+  $("zero").addEventListener("touchstart", () => { lpTimer=setTimeout(openPin, 900); }, {passive:true});
+  $("zero").addEventListener("touchend", () => { if (lpTimer) clearTimeout(lpTimer); }, {passive:true});
+
+  // ---------- PIN gate ----------
+  const pinOverlay = $("pinOverlay");
+  const pinTitle = $("pinTitle");
+  const pinInput = $("pinInput");
+  let pinMode="ENTER", tempPin="";
+  function openPin(){
+    pinInput.value="";
+    const stored = localStorage.getItem(KEY_PIN);
+    if (!stored){ pinMode="SET"; pinTitle.textContent="Set PIN"; }
+    else { pinMode="ENTER"; pinTitle.textContent="Enter PIN"; }
+    pinOverlay.classList.add("show");
+    setTimeout(()=>pinInput.focus(), 40);
+  }
+  function closePin(){ pinOverlay.classList.remove("show"); pinInput.value=""; tempPin=""; }
+  $("pinClose").addEventListener("click", closePin);
+  $("pinOk").addEventListener("click", () => {
+    const stored = localStorage.getItem(KEY_PIN);
+    const v = (pinInput.value||"").replace(/\D/g,"");
+    if (pinMode==="ENTER"){
+      if (v && stored && v===stored){ closePin(); openHidden(); }
+      else { pinInput.value=""; $("pinOverlay").querySelector(".card").classList.add("shake"); setTimeout(()=>$("pinOverlay").querySelector(".card").classList.remove("shake"), 250); }
+      return;
+    }
+    if (pinMode==="SET"){
+      if (v.length<4){ alert("Use at least 4 digits."); return; }
+      tempPin=v; pinMode="CONFIRM"; pinTitle.textContent="Confirm PIN"; pinInput.value=""; return;
+    }
+    if (pinMode==="CONFIRM"){
+      if (v!==tempPin){ alert("Mismatch. Try again."); pinMode="SET"; pinTitle.textContent="Set PIN"; pinInput.value=""; tempPin=""; return; }
+      localStorage.setItem(KEY_PIN, v);
+      closePin(); openHidden();
+    }
+  });
+
+  // ---------- hidden ----------
+  const hiddenOverlay = $("hiddenOverlay");
+  const panicOverlay = $("panicOverlay");
+  function openHidden(){ renderHidden(); hiddenOverlay.classList.add("show"); }
+  function closeHidden(){ hiddenOverlay.classList.remove("show"); closePanic(); }
+  $("hideBtn").addEventListener("click", closeHidden);
+
+  function renderHidden(){
+    $("dailyQuote").textContent = dailyQuote();
+    const st = loadState();
+    const anchor = st.lastResetTs>0 ? st.lastResetTs : st.startTs;
+    $("streakText").textContent = fmtDur(now()-anchor);
+
+    const logs = (st.logs||[]).slice(0, 10);
+    if (logs.length === 0){
+      $("logList").textContent = "No entries yet.";
+    } else {
+      $("logList").innerHTML = logs.map(it => {
+        const d = new Date(it.ts);
+        const t = (it.type||"").toUpperCase();
+        return `<div style="display:flex;justify-content:space-between;gap:10px;">
+                  <span style="font-weight:700;opacity:.9">${t}</span>
+                  <span style="opacity:.70">${d.toLocaleString()}</span>
+                </div>`;
+      }).join("");
+    }
+  }
+  setInterval(() => { if (hiddenOverlay.classList.contains("show")) renderHidden(); }, 1000);
+
+  $("logResetBtn").addEventListener("click", logReset);
+  $("logWinBtn").addEventListener("click", () => addLog("win","chose to stop"));
+
+  // ---------- panic: SPAM NO / DON'T DO IT ----------
+  const panicBox = $("panicBox");
+  let spamOn=false;
+
+  const SPAM_LINES = [
+    "NO.",
+    "Don’t do it.",
+    "Back out. Right now.",
+    "You’ll regret it. You know this.",
+    "Close it. Put the phone down.",
+    "Win the next minute.",
+    "Do not trade peace for a quick hit.",
+    "Breathe. 4 in. 6 out.",
+    "NO. Not today.",
+    "Leave. Now."
+  ];
+
+  function openPanic(){
+    addLog("urge","");
+    panicOverlay.classList.add("show");
+    panicBox.innerHTML = "";
+    spamOn = true;
+    spamLoop();
+  }
+  function closePanic(){
+    spamOn = false;
+    panicOverlay.classList.remove("show");
+  }
+
+  async function spamLoop(){
+    let i = 0;
+    while (spamOn){
+      const line = document.createElement("div");
+      line.className = "panicLine";
+      const msg = SPAM_LINES[i % SPAM_LINES.length];
+      line.innerHTML = (i % 5 === 0) ? `<span class="panicStrong">${msg}</span>` : msg;
+      panicBox.appendChild(line);
+      // auto-scroll
+      panicBox.scrollTop = panicBox.scrollHeight;
+
+      // occasional "type backspace + retype" effect
+      if (i % 7 === 0){
+        await sleep(120);
+        line.textContent = msg.slice(0, Math.max(1, msg.length-3));
+        await sleep(90);
+        line.textContent = msg;
+      }
+
+      i++;
+      // speed pattern: bursts
+      const delay = (i < 18) ? 110 : (i < 45 ? 160 : 220);
+      await sleep(delay);
+    }
+  }
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  $("panicBtn").addEventListener("click", openPanic);
+  $("panicClose").addEventListener("click", closePanic);
+  $("panicHide").addEventListener("click", () => { closePanic(); closeHidden(); });
+
+  // ---------- rain ambience (improved: smoother noise, no "coding beeps") ----------
+  let audioCtx=null, rainOn=false;
+  let noiseSrc=null, noiseGain=null, windGain=null, dropTimer=null;
+
+  function makeNoiseBuffer(ctx, seconds){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    // slightly "pink-ish": integrate white noise a bit
+    let last = 0;
+    for (let i=0;i<len;i++){
+      const white = Math.random()*2 - 1;
+      last = (last*0.98) + (white*0.02);
+      data[i] = last;
+    }
+    return buf;
+  }
+
+  function startRain(){
+    if (rainOn) return;
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+
+    // Base rain "shhh"
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx, 2.0);
+    src.loop = true;
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 1400;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 80;
+
+    const rain = ctx.createGain();
+    rain.gain.value = 0.14;
+
+    // Gentle wind layer
+    const windSrc = ctx.createBufferSource();
+    windSrc.buffer = makeNoiseBuffer(ctx, 3.0);
+    windSrc.loop = true;
+
+    const windLP = ctx.createBiquadFilter();
+    windLP.type = "lowpass";
+    windLP.frequency.value = 220;
+
+    const wind = ctx.createGain();
+    wind.gain.value = 0.06;
+
+    // Output limiter-ish
+    const out = ctx.createGain();
+    out.gain.value = 0.9;
+
+    src.connect(hp); hp.connect(lp); lp.connect(rain); rain.connect(out);
+    windSrc.connect(windLP); windLP.connect(wind); wind.connect(out);
+    out.connect(ctx.destination);
+
+    src.start();
+    windSrc.start();
+
+    // soft droplet bursts using filtered noise (no oscillators)
+    const makeDrop = () => {
+      if (!rainOn) return;
+      const dropSrc = ctx.createBufferSource();
+      dropSrc.buffer = makeNoiseBuffer(ctx, 0.25);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1200 + Math.random()*1000;
+      bp.Q.value = 8;
+
+      const g = ctx.createGain();
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.04 + Math.random()*0.05, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14 + Math.random()*0.10);
+
+      dropSrc.connect(bp); bp.connect(g); g.connect(ctx.destination);
+      dropSrc.start();
+      dropSrc.stop(t0 + 0.25);
+      dropTimer = setTimeout(makeDrop, 130 + Math.random()*260);
+    };
+
+    noiseSrc = src;
+    noiseGain = rain;
+    windGain = wind;
+    rainOn = true;
+    $("rainBtn").textContent = "Rain: On";
+    makeDrop();
+  }
+
+  function stopRain(){
+    if (!rainOn) return;
+    rainOn = false;
+    $("rainBtn").textContent = "Rain: Off";
+    try{ if (dropTimer) clearTimeout(dropTimer); }catch(_){}
+    try{ noiseSrc && noiseSrc.stop(); }catch(_){}
+    noiseSrc=null;
+  }
+
+  $("rainBtn").addEventListener("click", async () => {
+    // iOS requires user gesture
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+    }catch(_){}
+    if (!rainOn) startRain(); else stopRain();
+  });
+
+  // service worker
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
